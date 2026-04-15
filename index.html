@@ -46,31 +46,15 @@ scene.add(floorMesh);
 /* =========================
    数字テクスチャ
 ========================= */
-function tex(n){
-  const c = document.createElement("canvas");
-  c.width = 256;
-  c.height = 256;
-  const ctx = c.getContext("2d");
-
-  ctx.fillStyle = "white";
-  ctx.fillRect(0,0,256,256);
-
-  ctx.fillStyle = "black";
-  ctx.font = "bold 150px sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(n,128,128);
-
-  return new THREE.CanvasTexture(c);
-}
+const loader = new THREE.TextureLoader();
 
 const materials = [
-  new THREE.MeshStandardMaterial({ map: tex(3) }),
-  new THREE.MeshStandardMaterial({ map: tex(4) }),
-  new THREE.MeshStandardMaterial({ map: tex(5) }),
-  new THREE.MeshStandardMaterial({ map: tex(2) }),
-  new THREE.MeshStandardMaterial({ map: tex(1) }),
-  new THREE.MeshStandardMaterial({ map: tex(6) })
+  new THREE.MeshBasicMaterial({ map: loader.load("1.png") }),
+  new THREE.MeshBasicMaterial({ map: loader.load("2.png") }),
+  new THREE.MeshBasicMaterial({ map: loader.load("3.png") }),
+  new THREE.MeshBasicMaterial({ map: loader.load("4.png") }),
+  new THREE.MeshBasicMaterial({ map: loader.load("5.png") }),
+  new THREE.MeshBasicMaterial({ map: loader.load("6.png") }),
 ];
 
 /* 見た目（少し分割して丸っぽく見せる） */
