@@ -1,0 +1,50 @@
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at center, #222, #000);
+  perspective: 900px;
+}
+
+.scene {
+  width: 220px;
+  height: 220px;
+}
+
+.dice {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  cursor: pointer;
+}
+
+.face {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  background: #fff;
+  border-radius: 18px;
+  border: 2px solid rgba(0,0,0,0.2);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  font-size: 95px;
+  font-weight: 900;
+  color: #111;
+
+  box-shadow:
+    inset 0 0 20px rgba(0,0,0,0.08),
+    0 18px 35px rgba(0,0,0,0.45);
+}
+
+.front  { transform: translateZ(110px); }
+.back   { transform: rotateY(180deg) translateZ(110px); }
+.right  { transform: rotateY(90deg) translateZ(110px); }
+.left   { transform: rotateY(-90deg) translateZ(110px); }
+.top    { transform: rotateX(90deg) translateZ(110px); }
+.bottom { transform: rotateX(-90deg) translateZ(110px); }

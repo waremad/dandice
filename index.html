@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dice Collision Guaranteed</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import * as CANNON from "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js";
+
+/* =========================
+   THREE
+========================= */
+const scene = new THREE.Scene();
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+/* 真上カメラ */
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 8, 0);
+camera.up.set(0, 0, -1);
+
+/* ライト */
+scene.add(new THREE.DirectionalLight(0xffffff, 1).position.set(5,10,5));
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+/* =========================
+   床（見た目）
+========================= */
+const floorMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(12,12),
+  new THREE.MeshStandardMaterial({ color: 0x333333 })
+);
+floorMesh.rotation.x = -Math.PI/2;
+scene.add(floorMesh);
+
+/* =========================
+   数字テクスチャ
+========================= */
+function tex(n){
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 256;
+  const ctx = c.getContext("2d");
+
+  ctx.fillStyle = "white";
+  ctx.fillRect(0,0,256,256);
+
+  ctx.fillStyle = "black";
+  ctx.font = "bold 150px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(n,128,128);
+
+  return new THREE.CanvasTexture(c);
+}
+
+const materials = [
+  new THREE.MeshStandardMaterial({ map: tex(3) }),
+  new THREE.MeshStandardMaterial({ map: tex(4) }),
+  new THREE.MeshStandardMaterial({ map: tex(5) }),
+  new THREE.MeshStandardMaterial({ map: tex(2) }),
+  new THREE.MeshStandardMaterial({ map: tex(1) }),
+  new THREE.MeshStandardMaterial({ map: tex(6) })
+];
+
+/* 見た目（少し分割して丸っぽく見せる） */
+const diceMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(1,1,1, 4,4,4),
+  materials
+);
+scene.add(diceMesh);
+
+/* =========================
+   PHYSICS（ここが重要）
+========================= */
+const world = new CANNON.World({
+  gravity: new CANNON.Vec3(0, -9.82, 0)
+});
+
+/* 安定化設定 */
+world.solver.iterations = 10;
+world.broadphase = new CANNON.SAPBroadphase(world);
+world.allowSleep = true;
+
+/* マテリアル */
+const mat = new CANNON.Material("dice");
+const floorMat = new CANNON.Material("floor");
+
+/* 床（必ずSTATIC＋接触保証） */
+const floorBody = new CANNON.Body({
+  mass: 0,
+  type: CANNON.Body.STATIC,
+  shape: new CANNON.Plane(),
+  material: floorMat
+});
+floorBody.quaternion.setFromEuler(-Math.PI/2,0,0);
+world.addBody(floorBody);
+
+/* サイコロ（確実に当たるBox物理） */
+const diceBody = new CANNON.Body({
+  mass: 1,
+  shape: new CANNON.Box(new CANNON.Vec3(0.5,0.5,0.5)),
+  position: new CANNON.Vec3(0,2,0),
+
+  linearDamping: 0.05,
+  angularDamping: 0.08,
+
+  allowSleep: true,
+  sleepSpeedLimit: 0.05,
+  sleepTimeLimit: 1.5,
+
+  material: mat
+});
+
+world.addBody(diceBody);
+
+/* 接触設定（床との当たり判定の核心） */
+world.addContactMaterial(
+  new CANNON.ContactMaterial(mat, floorMat, {
+    friction: 0.35,
+    restitution: 0.25
+  })
+);
+
+/* 衝突ログ（デバッグ用：当たってる証拠） */
+diceBody.addEventListener("collide", (e) => {
+  console.log("collision with:", e.body.id);
+});
+
+/* =========================
+   LOOP
+========================= */
+function animate(){
+  world.fixedStep();
+
+  diceMesh.position.copy(diceBody.position);
+  diceMesh.quaternion.copy(diceBody.quaternion);
+
+  camera.position.x = diceMesh.position.x;
+  camera.position.z = diceMesh.position.z;
+  camera.lookAt(diceMesh.position);
+
+  renderer.render(scene,camera);
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* =========================
+   THROW
+========================= */
+window.addEventListener("click", () => {
+  diceBody.wakeUp();
+
+  diceBody.position.set(0,2,0);
+
+  diceBody.velocity.set(
+    (Math.random()-0.5)*7,
+    7 + Math.random()*2,
+    (Math.random()-0.5)*7
+  );
+
+  diceBody.angularVelocity.set(
+    Math.random()*15,
+    Math.random()*15,
+    Math.random()*15
+  );
+});
+</script>
+
+</body>
+</html>
